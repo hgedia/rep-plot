@@ -1,8 +1,5 @@
 import json
 import matplotlib.pyplot as plt
-import numpy as np
-np.random.seed(1)
-
 
 class Validator():
     def __init__(self,data=None):
@@ -15,7 +12,7 @@ class Validator():
         return self.user_id
 
     def compute_score(self):
-        for idx,reputation in enumerate(self.reputation_data):
+        for idx,_ in enumerate(self.reputation_data):
             params = self.reputation_data[idx]["params"];
             vote_score  =0;
             upvote_score =0;
@@ -40,16 +37,21 @@ class Validator():
         self.annotate =[]
         for idx,_ in enumerate(self.reputation_data):
             self.y.append(self.reputation_data[idx]["score"])
-            self.x.append(idx);
-            #self.annotate.append(self.reputation_data["idx"]["annotation"][:]);
+            self.x.append(idx)
+            self.annotate.append(self.reputation_data[idx]["annotation"])
 
-        self.line = plotter.plot(self.x,self.y,marker="o")
+        self.line, = plotter.plot(self.x,self.y,marker="o")
 
+    def get_line(self):
+        return self.line
+
+    def get_annotation(self,index):
+        return self.annotate[index]
 
         
 validatorList = []
 
-with open("indorse-prod.validatorsv3.json") as f:
+with open("indorse-prod.validatorsv4.json") as f:
     data = json.loads(f.read())
     for idx,validators in enumerate(data):
         validator = Validator(data[idx])
@@ -64,9 +66,37 @@ annot.set_visible(False)
 
 
 for validator in validatorList:
-    print(validator.getUserId())
-    print(validator.reputation_data)
     validator.plot_validator(plt)
 
+
+def search_and_generate_annotation(event):
+    for validator in validatorList:
+       line = validator.get_line()
+       cont, indArr = line.contains(event)
+       if cont:
+           x, y = line.get_data()
+           xy = (x[indArr["ind"][0]], y[indArr["ind"][0]])
+           annotation = validator.get_annotation(indArr["ind"][0])
+           return True,xy,annotation
+
+    return False,"",""
+
+def hover(event):
+    vis = annot.get_visible()
+    if event.inaxes == ax:
+        cont, xy, text = search_and_generate_annotation(event)
+        if cont:
+            annot.xy = xy
+            annot.set_text(text)
+            annot.get_bbox_patch().set_alpha(0.4)
+            annot.set_visible(True)
+            fig.canvas.draw_idle()
+        else:
+            if vis:
+                annot.set_visible(False)
+                fig.canvas.draw_idle()
+
+
+fig.canvas.mpl_connect("motion_notify_event", hover)
 
 plt.show()
