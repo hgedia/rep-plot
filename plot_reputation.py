@@ -10,7 +10,7 @@ class Validator():
         self.compute_score(); 
        
      
-    def getUserId(self):
+    def get_user_id(self):
         return self.user_id
 
     def compute_score(self):
@@ -33,7 +33,7 @@ class Validator():
                 self.reputation_data[idx]["score"] = round(vote_score/2,2);
                 self.reputation_data[idx]["annotation"] = "U={},D={},V={},H={}".format(str(0),str(0),str(vote_score),str(0))
 
-    def plot_validator(self,plotter):
+    def plot_validator(self,plotter,legend):
         self.x =[]
         self.y =[]
         self.annotate =[]
@@ -43,8 +43,10 @@ class Validator():
             self.annotate.append(self.reputation_data[idx]["annotation"])
 
         self.line, = plotter.plot(self.x,self.y,marker="o")
-        #self.line.set_label(self.user_id[:2] + "..." + self.user_id[-2:])
-        #plotter.legend(loc='best')
+        if(self.user_id in legend):
+            l = len(self.reputation_data)
+            self.line.set_label(self.user_id[:2] + "..." + self.user_id[-2:] + "(S=" + str(self.reputation_data[l-1]["score"]) +")")
+            plotter.legend(loc='best')
 
     def get_line(self):
         return self.line
@@ -93,8 +95,6 @@ def plot_validator_metrics(validatorList,plotter):
 
     for validator in validatorList:
         t, u, d, h, v = validator.get_last_reputation_params()
-        #print("T="+str(t) + " U="+str(u) + " D="+str(d) + " H="+str(h) +" V="+str(v));
-
         #Total Votes
         if(t>0):
             total_vote_count += 1
@@ -243,7 +243,6 @@ def plot_validator_score_bar(validatorList,plotter):
             elif(s>=90):
                 validator_score_dict["90-100"] += 1
 
-    #ax1 = fig3.add_subplot(351)
     fig3.suptitle("Validator scores (T=" + str(total_validator_count) + ")")
     plotter.bar(validator_score_dict.keys(),validator_score_dict.values())
     
@@ -269,9 +268,18 @@ annot.set_visible(False)
 
 fig.canvas.mpl_connect("motion_notify_event", hover)
 
+
+sorted_list = sorted(validatorList,reverse=True)
+legend  =[]
+for validator in sorted_list[:5]:
+    legend.append(validator.get_user_id())
+
+
+
+
 #Plot 
 for validator in validatorList:
-    validator.plot_validator(plt)
+    validator.plot_validator(plt,legend)
 
 plot_validator_metrics(validatorList,plt)
 plot_validator_score_bar(validatorList,plt)
