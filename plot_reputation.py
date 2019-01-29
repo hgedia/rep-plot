@@ -2,8 +2,10 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib.cm as mplcm
 import matplotlib.colors as colors
+import numpy as np
 
-class Validator():
+class Validator():    
+
     def __init__(self,data=None):
         self.user_id = data["user_id"]
         self.reputation_data = data["reputation_data"] 
@@ -22,14 +24,19 @@ class Validator():
             hide_score = 0
 
             vote_score = self.reputation_data[idx]["score_params"]["vote_score"];
-
-            if(params["totalUpVotes"] > 0):
+            
+            if(params["totalVotes"] > 0 ):
                 upvote_score = round(params["totalUpVotes"]/params["totalVotes"]*100,2)
                 downvote_score = round(params["totalDownVotes"]/params["totalVotes"]*100,2)
                 hide_score = round(params["totalHides"]/params["totalVotes"]*100,2)
-                self.reputation_data[idx]["score"] = round((vote_score + upvote_score - downvote_score - hide_score)/2,2)
+                self.reputation_data[idx]["score"] = round(
+                    (vote_score + upvote_score - downvote_score - hide_score)/2, 2)
+                #if(params["totalVotes"] > 20):
+                #    self.reputation_data[idx]["score"] = round((vote_score + upvote_score - downvote_score - hide_score)/2,2)
+                #else:
+                #   self.reputation_data[idx]["score"] = 0
                 self.reputation_data[idx]["annotation"] = "U={},D={},V={},H={}".format(str(upvote_score),str(downvote_score),str(vote_score),str(hide_score))
-            else :
+            else :                
                 self.reputation_data[idx]["score"] = round(vote_score/2,2);
                 self.reputation_data[idx]["annotation"] = "U={},D={},V={},H={}".format(str(0),str(0),str(vote_score),str(0))
 
@@ -46,6 +53,9 @@ class Validator():
         if(self.user_id in legend):
             l = len(self.reputation_data)
             self.line.set_label(self.user_id[:2] + "..." + self.user_id[-2:] + "(S=" + str(self.reputation_data[l-1]["score"]) +")")
+            print(self.user_id[:2] + "..." + self.user_id[-2:]  + "A = " + self.reputation_data[l-1]["annotation"] +
+                  "TV=" + str(self.reputation_data[l-1]["params"]["totalVotes"]))
+            
             plotter.legend(loc='best')
 
     def get_line(self):
@@ -91,12 +101,18 @@ def plot_validator_metrics(validatorList,plotter):
     total_hide_dict = {"0-2": 0, "2-4": 0, "4-8": 0, "8-INF": 0}
     total_consensus_perc = 0
     total_consesnsus_perc_dict = {"0-20": 0, "20-40": 0, "40-60": 0,"60-80":0,  "80-100": 0}
+    total_votes_cast =0
+    total_upvotes_cast =0
+    total_downvotes_cast =0
+    total_hides_cast =0
 
 
     for validator in validatorList:
         t, u, d, h, v = validator.get_last_reputation_params()
         #Total Votes
+        
         if(t>0):
+            total_votes_cast +=t
             total_vote_count += 1
             if(t < 10):
                 total_votes_dict["0-10"] += 1
@@ -111,6 +127,7 @@ def plot_validator_metrics(validatorList,plotter):
 
         #Total Upvotes
         if(u>0):
+            total_upvotes_cast+=u
             total_upvote_count += 1
             if(u < 2):
                 total_upvotes_dict["0-2"] += 1
@@ -123,6 +140,7 @@ def plot_validator_metrics(validatorList,plotter):
 
         #Total Downvotes
         if(d >0):
+            total_downvotes_cast+=d
             total_downvote_count += 1
             if(d < 2):
                 total_downvotes_dict["0-2"] += 1
@@ -135,6 +153,7 @@ def plot_validator_metrics(validatorList,plotter):
 
         #Total Hides
         if(h > 0):
+            total_hides_cast+=h
             total_hide_count +=1
             if(h < 2):            
                 total_hide_dict["0-2"] += 1
@@ -162,12 +181,13 @@ def plot_validator_metrics(validatorList,plotter):
     #print(total_consesnsus_perc_dict)
 
 
-    fig2 = plotter.figure(2, figsize=(22, 5))
+    fig2 = plotter.figure(2, figsize=(22, 6))
     ax1 = fig2.add_subplot(231)
     ax2 = fig2.add_subplot(232)
     ax3 = fig2.add_subplot(233)
     ax4 = fig2.add_subplot(234)
     ax5 = fig2.add_subplot(235)
+    ax6 = fig2.add_subplot(236)
 
     plt.subplot(231)
     plotter.bar(total_consesnsus_perc_dict.keys(),total_consesnsus_perc_dict.values())
@@ -184,6 +204,26 @@ def plot_validator_metrics(validatorList,plotter):
     plt.subplot(235)
     plotter.bar(total_votes_dict.keys(), total_votes_dict.values())
     ax5.set_title("Votes cast by validator  (T=" + str(total_vote_count) + ")")
+
+    labels = 'Upvotes', 'Downvotes', 'Hidevotes', 'Votes'
+    sizes =[total_upvotes_cast, total_downvotes_cast,total_hides_cast,total_votes_cast-total_upvotes_cast - total_downvotes_cast]
+
+
+    def func(pct, allvals):
+        absolute = int(pct/100.*np.sum(allvals))
+        return "{:.1f}%\n({:d} g)".format(pct, absolute)
+
+    wedges, texts, autotexts = ax6.pie(sizes, labels=labels, autopct='%1.1f%%',
+            shadow=True, startangle=90)
+    ax6.axis('equal')
+
+    legend_lables = 'Upvotes (T=' + str(total_upvotes_cast) + ')','Downvotes (T=' + str(total_downvotes_cast) + ')','Hidevotes (T=' + str(total_hides_cast) + ')','Votes (T=' + str(total_votes_cast - total_upvotes_cast - total_downvotes_cast) + ')'
+                    
+    ax6.legend(wedges, legend_lables,
+               title="Votes (T=" + str(sum(sizes)) + ")",
+              loc="center left",
+              bbox_to_anchor=(1, 0, 0.5, 1))
+
 
 
 def search_and_generate_annotation(event):
@@ -271,7 +311,7 @@ fig.canvas.mpl_connect("motion_notify_event", hover)
 
 sorted_list = sorted(validatorList,reverse=True)
 legend  =[]
-for validator in sorted_list[:5]:
+for validator in sorted_list[:10]:
     legend.append(validator.get_user_id())
 
 
