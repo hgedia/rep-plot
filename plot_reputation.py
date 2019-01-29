@@ -53,8 +53,7 @@ class Validator():
     def plot_validator(self,plotter,legend):
         self.x =[]
         self.y =[]
-        self.annotate =[]
-        print("PLOT")
+        self.annotate =[]        
         for idx,_ in enumerate(self.reputation_data):
             self.y.append(self.reputation_data[idx]["score"])
             self.x.append(idx)
