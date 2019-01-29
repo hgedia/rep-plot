@@ -29,21 +29,32 @@ class Validator():
                 upvote_score = round(params["totalUpVotes"]/params["totalVotes"]*100,2)
                 downvote_score = round(params["totalDownVotes"]/params["totalVotes"]*100,2)
                 hide_score = round(params["totalHides"]/params["totalVotes"]*100,2)
-                self.reputation_data[idx]["score"] = round(
-                    (vote_score + upvote_score - downvote_score - hide_score)/2, 2)
+                if(params["totalVotes"] > 15):
+                    self.reputation_data[idx]["score"] = round(
+                        ((0.9* vote_score) + (0.1 * upvote_score) - downvote_score - hide_score), 2)
+                else:
+                    self.reputation_data[idx]["score"]=0
                 #if(params["totalVotes"] > 20):
                 #    self.reputation_data[idx]["score"] = round((vote_score + upvote_score - downvote_score - hide_score)/2,2)
                 #else:
                 #   self.reputation_data[idx]["score"] = 0
+                #print("Score = " + str(self.reputation_data[idx]["score"]))
                 self.reputation_data[idx]["annotation"] = "U={},D={},V={},H={}".format(str(upvote_score),str(downvote_score),str(vote_score),str(hide_score))
-            else :                
-                self.reputation_data[idx]["score"] = round(vote_score/2,2);
-                self.reputation_data[idx]["annotation"] = "U={},D={},V={},H={}".format(str(0),str(0),str(vote_score),str(0))
+            #else :                
+            #    if(params["totalVotes"] > 15):
+            #        self.reputation_data[idx]["score"] = round(vote_score *0.9,2);
+            #    else:
+            #        self.reputation_data[idx]["score"] =0
+            #    self.reputation_data[idx]["annotation"] = "U={},D={},V={},H={}".format(str(0),str(0),str(vote_score),str(0))
+            else:
+                 self.reputation_data[idx]["annotation"] = "U={},D={},V={},H={}".format(
+                     str(0), str(0), str(vote_score), str(0))
 
     def plot_validator(self,plotter,legend):
         self.x =[]
         self.y =[]
         self.annotate =[]
+        print("PLOT")
         for idx,_ in enumerate(self.reputation_data):
             self.y.append(self.reputation_data[idx]["score"])
             self.x.append(idx)
@@ -256,32 +267,52 @@ def hover(event):
 
 def plot_validator_score_bar(validatorList,plotter):
     fig3 = plotter.figure()
-    validator_score_dict = {"0-10":0 , "10-20" :0 , "20-30":0, "30-40":0, "40-50" :0 , "50-60":0 , "60-70":0,"70-80":0,"80-90":0,"90-100":0}
+    validator_score_dict = {"0-5":0 ,"5-10":0 ,"10-15":0, "15-20" :0 ,"20-25":0, "25-30":0, "30-35":0,"35-40":0,"40-45":0, "45-50" :0,"50-55":0 ,"55-60":0 ,"60-65":0, "65-70":0,"70-75":0 , "75-80":0,"80-85":0, "85-90":0,"90-95":0 , "95-100":0}
     total_validator_count = 0
     for validator in validatorList:
         s = validator.get_last_reputation_score()
         if(s>0):
             total_validator_count+=1
-            if(s <10):
-                validator_score_dict["0-10"] += 1
+            if(s <5):
+                validator_score_dict["0-5"] += 1
+            elif(s < 10):
+                validator_score_dict["5-10"] += 1
+            elif(s < 15):
+                validator_score_dict["10-15"] += 1
             elif(s<20):
-                validator_score_dict["10-20"] += 1
+                validator_score_dict["15-20"] += 1
+            elif(s < 25):
+                validator_score_dict["20-25"] += 1
             elif(s < 30):
-                validator_score_dict["20-30"] += 1
+                validator_score_dict["25-30"] += 1
+            elif(s < 35):
+                validator_score_dict["30-35"] += 1
             elif(s < 40):
-                validator_score_dict["30-40"] += 1
+                validator_score_dict["35-40"] += 1
+            elif(s < 45):
+                validator_score_dict["40-45"] += 1
             elif(s < 50):
-                validator_score_dict["40-50"] += 1
+                validator_score_dict["45-50"] += 1
+            elif(s < 55):
+                validator_score_dict["50-55"] += 1
             elif(s < 60):
-                validator_score_dict["50-60"] += 1
+                validator_score_dict["55-60"] += 1
+            elif(s < 65):
+                validator_score_dict["60-65"] += 1
             elif(s<70):
-                validator_score_dict["60-70"] +=1
+                validator_score_dict["65-70"] +=1
+            elif(s < 75):
+                validator_score_dict["70-75"] += 1
             elif(s<80):
-                validator_score_dict["70-80"] += 1
+                validator_score_dict["75-80"] += 1
+            elif(s < 85):
+                validator_score_dict["80-85"] += 1
             elif(s < 90):
-                validator_score_dict["80-90"] += 1
-            elif(s>=90):
-                validator_score_dict["90-100"] += 1
+                validator_score_dict["85-90"] += 1
+            elif(s < 95):
+                validator_score_dict["90-95"] += 1
+            elif(s>=95):
+                validator_score_dict["95-100"] += 1
 
     fig3.suptitle("Validator scores (T=" + str(total_validator_count) + ")")
     plotter.bar(validator_score_dict.keys(),validator_score_dict.values())
@@ -311,11 +342,8 @@ fig.canvas.mpl_connect("motion_notify_event", hover)
 
 sorted_list = sorted(validatorList,reverse=True)
 legend  =[]
-for validator in sorted_list[:10]:
+for validator in sorted_list[:5]:
     legend.append(validator.get_user_id())
-
-
-
 
 #Plot 
 for validator in validatorList:
