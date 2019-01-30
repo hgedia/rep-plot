@@ -24,22 +24,19 @@ class Validator():
             hide_score = 0
 
             vote_score = self.reputation_data[idx]["score_params"]["vote_score"];
-            
+         
             if(params["totalVotes"] > 0 ):
                 upvote_score = round(params["totalUpVotes"]/params["totalVotes"]*100,2)
                 downvote_score = round(params["totalDownVotes"]/params["totalVotes"]*100,2)
                 hide_score = round(params["totalHides"]/params["totalVotes"]*100,2)
                 if(params["totalVotes"] > 15):
-                    self.reputation_data[idx]["score"] = round(
+                    self.reputation_data[idx]["cscore"] = round(
                         ((0.9* vote_score) + (0.1 * upvote_score) - downvote_score - hide_score), 2)
                 else:
-                    self.reputation_data[idx]["score"]=0
-                #if(params["totalVotes"] > 20):
-                #    self.reputation_data[idx]["score"] = round((vote_score + upvote_score - downvote_score - hide_score)/2,2)
-                #else:
-                #   self.reputation_data[idx]["score"] = 0
-                #print("Score = " + str(self.reputation_data[idx]["score"]))
+                    self.reputation_data[idx]["cscore"]=0                    
+
                 self.reputation_data[idx]["annotation"] = "U={},D={},V={},H={}".format(str(upvote_score),str(downvote_score),str(vote_score),str(hide_score))
+                
             #else :                
             #    if(params["totalVotes"] > 15):
             #        self.reputation_data[idx]["score"] = round(vote_score *0.9,2);
@@ -47,22 +44,23 @@ class Validator():
             #        self.reputation_data[idx]["score"] =0
             #    self.reputation_data[idx]["annotation"] = "U={},D={},V={},H={}".format(str(0),str(0),str(vote_score),str(0))
             else:
+                 self.reputation_data[idx]["cscore"] = 0
                  self.reputation_data[idx]["annotation"] = "U={},D={},V={},H={}".format(
                      str(0), str(0), str(vote_score), str(0))
 
-    def plot_validator(self,plotter,legend):
+    def plot_validator(self,plotter,legend):        
         self.x =[]
         self.y =[]
         self.annotate =[]        
         for idx,_ in enumerate(self.reputation_data):
-            self.y.append(self.reputation_data[idx]["score"])
+            self.y.append(self.reputation_data[idx]["cscore"])
             self.x.append(idx)
             self.annotate.append(self.reputation_data[idx]["annotation"])
 
         self.line, = plotter.plot(self.x,self.y,marker="o")
         if(self.user_id in legend):
             l = len(self.reputation_data)
-            self.line.set_label(self.user_id[:2] + "..." + self.user_id[-2:] + "(S=" + str(self.reputation_data[l-1]["score"]) +")")
+            self.line.set_label(self.user_id[:2] + "..." + self.user_id[-2:] + "(S=" + str(self.reputation_data[l-1]["cscore"]) +")")
             print(self.user_id[:2] + "..." + self.user_id[-2:]  + "A = " + self.reputation_data[l-1]["annotation"] +
                   "TV=" + str(self.reputation_data[l-1]["params"]["totalVotes"]))
             
@@ -77,12 +75,12 @@ class Validator():
     def __eq__(self, other):
         l = len (self.reputation_data)
         lo = len(other.reputation_data)
-        return self.reputation_data[l-1]["score"] == other.reputation_data[lo-1]["score"]
+        return self.reputation_data[l-1]["cscore"] == other.reputation_data[lo-1]["cscore"]
 
     def __lt__(self, other):
         l = len(self.reputation_data)
         lo = len(other.reputation_data)
-        return self.reputation_data[l-1]["score"] < other.reputation_data[lo-1]["score"]
+        return self.reputation_data[l-1]["cscore"] < other.reputation_data[lo-1]["cscore"]
 
     def get_last_reputation_params(self):
         l = len (self.reputation_data);
@@ -97,7 +95,7 @@ class Validator():
 
     def get_last_reputation_score(self):
         l = len(self.reputation_data)
-        s = self.reputation_data[l-1]["score"]
+        s = self.reputation_data[l-1]["cscore"]
         return s
 #Helpers    
 def plot_validator_metrics(validatorList,plotter):
@@ -269,8 +267,9 @@ def plot_validator_score_bar(validatorList,plotter):
     validator_score_dict = {"0-5":0 ,"5-10":0 ,"10-15":0, "15-20" :0 ,"20-25":0, "25-30":0, "30-35":0,"35-40":0,"40-45":0, "45-50" :0,"50-55":0 ,"55-60":0 ,"60-65":0, "65-70":0,"70-75":0 , "75-80":0,"80-85":0, "85-90":0,"90-95":0 , "95-100":0}
     total_validator_count = 0
     for validator in validatorList:
-        s = validator.get_last_reputation_score()
+        s = validator.get_last_reputation_score()                
         if(s>0):
+            print("User :" + validator.get_user_id() + " Score = " + str(s))
             total_validator_count+=1
             if(s <5):
                 validator_score_dict["0-5"] += 1
